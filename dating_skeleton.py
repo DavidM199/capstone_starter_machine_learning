@@ -2,16 +2,19 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import preprocessing
-
-#Create your df here:
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC 
+from sklearn.metrics import confusion_matrix
+from sklearn import linear_model
+from sklearn.neighbors import KNeighborsRegressor
 
 df = pd.read_csv("profiles.csv")
 #print(df.status.value_counts())
 
-df["height_cm"] = df.height.apply(lambda height: height * 2.54)
-
 #creating histogram of heights
-
+df["height_cm"] = df.height.apply(lambda height: height * 2.54)
+ 
 plt.hist(df.height_cm, bins=30)
 plt.xlabel("Heights")
 plt.ylabel("Frequency")
@@ -64,9 +67,6 @@ def seriousness_score(religion):
             return 3 
 df["religion_numerical"] = df.religion.apply(seriousness_score)
 
-
-
-
 #scaling data
 feature_data = df[['status_numerical', 'drugs_numerical', 'drinks_numerical', 'essay_len', 'avg_word_length', "religion_numerical", "sex_numerical", "income"]]
 
@@ -78,60 +78,38 @@ min_max_scaler = preprocessing.MinMaxScaler()
 x_scaled = min_max_scaler.fit_transform(x) 
 classif_data_scaled = pd.DataFrame(x_scaled, columns=feature_data.columns)
 
-
-def labeler(data):
-    if data > 0.5:
-        return 1
-    else:
-        return 0
-religion_labels = classif_data_1["religion_numerical"].apply(labeler).to_list()
-
-
-from sklearn.model_selection import train_test_split
-
-#K Nearest Neighbors
-from sklearn.neighbors import KNeighborsClassifier
-
+#splitting data
 train_data_1, test_data_1, train_labels_1, test_labels_1 = train_test_split(classif_data_scaled[["drinks_numerical", "drugs_numerical"]], classif_data_1["religion_numerical"], random_state=33)
 
+#K Nearest Neighbors
 classif_1 = KNeighborsClassifier()
 classif_1.fit(train_data_1, train_labels_1)
 
-
-
 #Support Vector Machines
-from sklearn.svm import SVC 
-
 classif_2 = SVC()
 classif_2.fit(train_data_1, train_labels_1)
 
 #Evaluation
 print("KNeighborsClassifer score: ", classif_1.score(test_data_1, test_labels_1))
 print("SVC score: ", classif_2.score(test_data_1, test_labels_1))
-
-
-from sklearn.metrics import confusion_matrix
-print("Confusion matrix of SVC: \n", confusion_matrix(test_labels_1, classif_2.predict(test_data_1)))
+#print("Confusion matrix of SVC: \n", confusion_matrix(test_labels_1, classif_2.predict(test_data_1)))
 
 #checking on religion variable
 plt.hist(x=classif_data_1["religion_numerical"])
 plt.savefig("religion.png")
 
-
-
+#data for regression models
 regression_data = feature_data[["avg_word_length", "drinks_numerical", "drugs_numerical", "income"]][feature_data["income"]> 0].dropna(subset = ["avg_word_length", "drinks_numerical", "drugs_numerical", "income"])
 
 train_set_2, test_set_2 = train_test_split(regression_data, test_size=0.2)
-#multiple regression model
-from sklearn import linear_model
 
+#multiple regression model
 regressor = linear_model.LinearRegression()
 regressor.fit(train_set_2[["avg_word_length", "drinks_numerical", "drugs_numerical"]], train_set_2["income"])
 print("Coeficients of multiple linear regression: ", regressor.coef_, "\n r squared: ", regressor.score(test_set_2[["avg_word_length", "drinks_numerical", "drugs_numerical"]], test_set_2["income"]))
 
 
-#K Nearest Neighbors Regression
-from sklearn.neighbors import KNeighborsRegressor
+#K Nearest Neighbors Regression - plotting the accuracy for possible k values to see the best accuracy achievable
 k_list = range(1,101)
 accuracies = []
 for k in range(1, 101):
